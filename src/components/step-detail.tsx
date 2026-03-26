@@ -2,7 +2,7 @@
 import { X, Terminal, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { assetUrl } from "@/lib/utils";
+
 import type { EvalStep } from "@/lib/eval-data";
 import { useState } from "react";
 
@@ -19,7 +19,7 @@ function ImageModal({ src, caption, onClose }: { src: string; caption: string; o
       </button>
       <div className="max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={assetUrl(src)} alt={caption} className="max-h-[80vh] w-auto object-contain rounded-lg" />
+        <img src={src} alt={caption} className="max-h-[80vh] w-auto object-contain rounded-lg" />
         <p className="text-white/70 text-sm mt-3 text-center">{caption}</p>
       </div>
     </div>
@@ -134,7 +134,7 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={assetUrl(step.screenshots[currentImageIndex].src)}
+                      src={step.screenshots[currentImageIndex].src}
                       alt={step.screenshots[currentImageIndex].caption}
                       className="w-full h-auto object-contain"
                     />
@@ -186,7 +186,7 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
                           onClick={() => setCurrentImageIndex(i)}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={assetUrl(ss.src)} alt={ss.caption} className="w-full h-full object-cover" />
+                          <img src={ss.src} alt={ss.caption} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>

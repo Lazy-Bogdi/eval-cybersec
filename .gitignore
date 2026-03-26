@@ -36,8 +36,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# screenshots (stored in external bucket)
-/public/screenshots/
 
 # typescript
 *.tsbuildinfo
