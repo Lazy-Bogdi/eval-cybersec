@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ArrowRight, Link, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,31 @@ interface RadialOrbitalTimelineProps {
   onNodeClick?: (id: number) => void;
 }
 
+// Starfield particle
+interface Star {
+  x: number;
+  y: number;
+  size: number;
+  opacity: number;
+  speed: number;
+  twinkleOffset: number;
+}
+
+function generateStars(count: number): Star[] {
+  const stars: Star[] = [];
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 0.5,
+      opacity: Math.random() * 0.6 + 0.2,
+      speed: Math.random() * 2 + 0.5,
+      twinkleOffset: Math.random() * Math.PI * 2,
+    });
+  }
+  return stars;
+}
+
 export default function RadialOrbitalTimeline({
   timelineData,
   onNodeClick,
@@ -32,9 +57,19 @@ export default function RadialOrbitalTimeline({
   const [pulseEffect, setPulseEffect] = useState<Record<number, boolean>>({});
   const [centerOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
+  const [time, setTime] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const stars = useMemo(() => generateStars(120), []);
+
+  // Animate time for twinkling
+  useEffect(() => {
+    const timer = setInterval(() => setTime(t => t + 0.05), 50);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === containerRef.current || e.target === orbitRef.current) {
@@ -77,7 +112,7 @@ export default function RadialOrbitalTimeline({
     if (autoRotate) {
       rotationTimer = setInterval(() => {
         setRotationAngle((prev) => {
-          const newAngle = (prev + 0.3) % 360;
+          const newAngle = (prev + 0.2) % 360;
           return Number(newAngle.toFixed(3));
         });
       }, 50);
@@ -94,13 +129,14 @@ export default function RadialOrbitalTimeline({
 
   const calculateNodePosition = (index: number, total: number) => {
     const angle = ((index / total) * 360 + rotationAngle) % 360;
-    const radius = 180;
+    const radius = 240;
     const radian = (angle * Math.PI) / 180;
     const x = radius * Math.cos(radian) + centerOffset.x;
     const y = radius * Math.sin(radian) + centerOffset.y;
     const zIndex = Math.round(100 + 50 * Math.cos(radian));
-    const opacity = Math.max(0.4, Math.min(1, 0.4 + 0.6 * ((1 + Math.sin(radian)) / 2)));
-    return { x, y, angle, zIndex, opacity };
+    const scale = 0.7 + 0.3 * ((1 + Math.sin(radian)) / 2);
+    const opacity = Math.max(0.35, Math.min(1, 0.35 + 0.65 * ((1 + Math.sin(radian)) / 2)));
+    return { x, y, angle, zIndex, opacity, scale };
   };
 
   const getRelatedItems = (itemId: number): number[] => {
@@ -122,38 +158,123 @@ export default function RadialOrbitalTimeline({
     }
   };
 
-  const getNodeColor = (status: TimelineItem["status"]) => {
+  const getNodeGradient = (status: TimelineItem["status"]) => {
     switch (status) {
-      case "completed": return "from-emerald-500 to-emerald-700";
-      case "in-progress": return "from-amber-500 to-amber-700";
-      case "pending": return "from-zinc-500 to-zinc-700";
-      default: return "from-zinc-500 to-zinc-700";
+      case "completed": return "from-emerald-400 via-emerald-500 to-teal-600";
+      case "in-progress": return "from-amber-400 via-amber-500 to-orange-600";
+      case "pending": return "from-zinc-400 via-zinc-500 to-zinc-700";
+      default: return "from-zinc-400 via-zinc-500 to-zinc-700";
+    }
+  };
+
+  const getGlowColor = (status: TimelineItem["status"]) => {
+    switch (status) {
+      case "completed": return "rgba(16, 185, 129, 0.4)";
+      case "in-progress": return "rgba(245, 158, 11, 0.4)";
+      case "pending": return "rgba(161, 161, 170, 0.2)";
+      default: return "rgba(161, 161, 170, 0.2)";
     }
   };
 
   return (
     <div
-      className="w-full h-[500px] flex flex-col items-center justify-center overflow-hidden relative"
+      className="w-full h-[650px] flex flex-col items-center justify-center overflow-hidden relative"
       ref={containerRef}
       onClick={handleContainerClick}
     >
+      {/* Starfield background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {stars.map((star, i) => {
+          const twinkle = Math.sin(time * star.speed + star.twinkleOffset) * 0.5 + 0.5;
+          return (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                backgroundColor: `rgba(255, 255, 255, ${star.opacity * twinkle})`,
+                boxShadow: star.size > 1.5 ? `0 0 ${star.size * 2}px rgba(255, 255, 255, ${star.opacity * twinkle * 0.5})` : "none",
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Nebula glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-[0.04]"
+          style={{ background: "radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(249,115,22,0.1) 40%, transparent 70%)" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-[0.03]"
+          style={{ background: "radial-gradient(circle, rgba(59,130,246,0.2) 0%, rgba(147,51,234,0.05) 50%, transparent 70%)" }} />
+      </div>
+
       <div className="relative w-full max-w-4xl h-full flex items-center justify-center">
         <div
           className="absolute w-full h-full flex items-center justify-center"
           ref={orbitRef}
-          style={{ perspective: "1000px" }}
+          style={{ perspective: "1200px" }}
         >
-          {/* Center node */}
-          <div className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500 animate-pulse flex items-center justify-center z-10">
-            <div className="absolute w-20 h-20 rounded-full border border-red-500/20 animate-ping opacity-70"></div>
-            <div className="absolute w-24 h-24 rounded-full border border-red-500/10 animate-ping opacity-50" style={{ animationDelay: "0.5s" }}></div>
-            <div className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-xs font-bold text-black">
-              18
+          {/* Center sun */}
+          <div className="absolute flex items-center justify-center z-10">
+            {/* Outer glow rings */}
+            <div className="absolute w-28 h-28 rounded-full opacity-20"
+              style={{ background: "radial-gradient(circle, rgba(239,68,68,0.5) 0%, transparent 70%)", animation: "pulse 3s ease-in-out infinite" }} />
+            <div className="absolute w-24 h-24 rounded-full border border-red-500/10 animate-ping opacity-40" style={{ animationDuration: "3s" }} />
+            <div className="absolute w-20 h-20 rounded-full border border-orange-500/15 animate-ping opacity-30" style={{ animationDuration: "2s", animationDelay: "0.5s" }} />
+            {/* Main sun */}
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-red-500/30"
+              style={{ animation: "pulse 4s ease-in-out infinite" }}>
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-yellow-300 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center">
+                  <span className="text-base font-black text-black">18</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Orbit ring */}
-          <div className="absolute w-96 h-96 rounded-full border border-white/10"></div>
+          {/* Orbit rings */}
+          <div className="absolute w-[480px] h-[480px] rounded-full border border-white/[0.06]" />
+          <div className="absolute w-[490px] h-[490px] rounded-full border border-white/[0.03]" style={{ transform: `rotate(${rotationAngle * 0.5}deg)` }}>
+            {/* Orbit particles */}
+            {[0, 60, 120, 180, 240, 300].map((angle) => (
+              <div key={angle} className="absolute w-1 h-1 rounded-full bg-white/10"
+                style={{
+                  left: `${50 + 50 * Math.cos((angle + rotationAngle) * Math.PI / 180)}%`,
+                  top: `${50 + 50 * Math.sin((angle + rotationAngle) * Math.PI / 180)}%`,
+                }} />
+            ))}
+          </div>
+
+          {/* Connection lines between nodes */}
+          <svg className="absolute w-full h-full pointer-events-none" style={{ left: 0, top: 0 }}>
+            <defs>
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.06)" />
+                <stop offset="50%" stopColor="rgba(255,255,255,0.12)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0.06)" />
+              </linearGradient>
+            </defs>
+            {timelineData.map((item, index) => {
+              const pos = calculateNodePosition(index, timelineData.length);
+              const centerX = containerRef.current ? containerRef.current.offsetWidth / 2 : 500;
+              const centerY = 325;
+              return (
+                <line
+                  key={item.id}
+                  x1={centerX}
+                  y1={centerY}
+                  x2={centerX + pos.x}
+                  y2={centerY + pos.y}
+                  stroke="url(#lineGrad)"
+                  strokeWidth="1"
+                  opacity={expandedItems[item.id] ? 0.4 : 0.15}
+                />
+              );
+            })}
+          </svg>
 
           {/* Nodes */}
           {timelineData.map((item, index) => {
@@ -161,6 +282,7 @@ export default function RadialOrbitalTimeline({
             const isExpanded = expandedItems[item.id];
             const isRelated = isRelatedToActive(item.id);
             const isPulsing = pulseEffect[item.id];
+            const isHovered = hoveredNodeId === item.id;
             const Icon = item.icon;
 
             return (
@@ -169,101 +291,120 @@ export default function RadialOrbitalTimeline({
                 ref={(el) => { nodeRefs.current[item.id] = el; }}
                 className="absolute transition-all duration-700 cursor-pointer"
                 style={{
-                  transform: `translate(${position.x}px, ${position.y}px)`,
-                  zIndex: isExpanded ? 200 : position.zIndex,
-                  opacity: isExpanded ? 1 : position.opacity,
+                  transform: `translate(${position.x}px, ${position.y}px) scale(${isExpanded ? 1.3 : isHovered ? 1.15 : position.scale})`,
+                  zIndex: isExpanded ? 200 : isHovered ? 150 : position.zIndex,
+                  opacity: isExpanded ? 1 : isHovered ? 1 : position.opacity,
+                  filter: isExpanded || isHovered ? `drop-shadow(0 0 15px ${getGlowColor(item.status)})` : "none",
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleItem(item.id);
                 }}
+                onMouseEnter={() => { setHoveredNodeId(item.id); setAutoRotate(false); }}
+                onMouseLeave={() => { setHoveredNodeId(null); if (!activeNodeId) setAutoRotate(true); }}
               >
-                {/* Energy glow */}
+                {/* Energy field */}
                 <div
-                  className={`absolute rounded-full -inset-1 ${isPulsing ? "animate-pulse duration-1000" : ""}`}
+                  className={`absolute rounded-full transition-all duration-500 ${isPulsing ? "animate-pulse" : ""}`}
                   style={{
-                    background: `radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)`,
-                    width: `${item.energy * 0.4 + 40}px`,
-                    height: `${item.energy * 0.4 + 40}px`,
-                    left: `-${(item.energy * 0.4 + 40 - 40) / 2}px`,
-                    top: `-${(item.energy * 0.4 + 40 - 40) / 2}px`,
+                    background: `radial-gradient(circle, ${getGlowColor(item.status)} 0%, transparent 70%)`,
+                    width: `${(isHovered || isExpanded ? 90 : 70)}px`,
+                    height: `${(isHovered || isExpanded ? 90 : 70)}px`,
+                    left: `${-(isHovered || isExpanded ? 90 : 70) / 2 + 28}px`,
+                    top: `${-(isHovered || isExpanded ? 90 : 70) / 2 + 28}px`,
+                    opacity: isHovered || isExpanded ? 0.8 : 0.3,
                   }}
-                ></div>
+                />
+
+                {/* Hover ring */}
+                {(isHovered || isExpanded) && (
+                  <div className="absolute -inset-2 rounded-full border border-white/20 animate-spin" style={{ animationDuration: "8s" }}>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white/50" />
+                  </div>
+                )}
 
                 {/* Node circle */}
                 <div className={`
-                  w-12 h-12 rounded-full flex items-center justify-center relative
-                  bg-gradient-to-br ${getNodeColor(item.status)}
-                  border-2
-                  ${isExpanded ? "border-white shadow-lg shadow-white/30 scale-125" : isRelated ? "border-white animate-pulse" : "border-white/40"}
-                  transition-all duration-300
+                  w-14 h-14 rounded-full flex items-center justify-center relative
+                  bg-gradient-to-br ${getNodeGradient(item.status)}
+                  border-2 transition-all duration-300
+                  ${isExpanded ? "border-white shadow-lg" : isRelated ? "border-white animate-pulse" : isHovered ? "border-white/70" : "border-white/30"}
                 `}>
-                  <Icon size={18} className="text-white" />
-                  {/* Step number badge */}
-                  <div className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    item.status === "completed" ? "bg-emerald-500 text-white" :
-                    item.status === "in-progress" ? "bg-amber-500 text-black" :
-                    "bg-zinc-600 text-white/70"
-                  }`}>
+                  <Icon size={22} className="text-white drop-shadow-md" />
+                  {/* Step number */}
+                  <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border-2 border-black transition-all duration-300 ${
+                    item.status === "completed" ? "bg-emerald-400 text-black" :
+                    item.status === "in-progress" ? "bg-amber-400 text-black" :
+                    "bg-zinc-500 text-white"
+                  } ${isHovered ? "scale-110" : ""}`}>
                     {index + 1}
                   </div>
                 </div>
 
                 {/* Label */}
                 <div className={`
-                  absolute top-14 left-1/2 -translate-x-1/2 whitespace-nowrap
-                  text-xs font-semibold tracking-wider
+                  absolute top-[70px] left-1/2 -translate-x-1/2 whitespace-nowrap text-center
                   transition-all duration-300
-                  ${isExpanded ? "text-white scale-110" : "text-white/70"}
+                  ${isExpanded ? "text-white scale-110" : isHovered ? "text-white" : "text-white/60"}
                 `}>
-                  {item.title}
+                  <div className="text-sm font-bold tracking-wide">{item.title}</div>
+                  {isHovered && !isExpanded && (
+                    <div className="text-[10px] text-white/40 mt-0.5 animate-fade-in">{item.date}</div>
+                  )}
                 </div>
 
                 {/* Expanded card */}
                 {isExpanded && (
-                  <Card className="absolute top-20 left-1/2 -translate-x-1/2 w-72 bg-black/95 backdrop-blur-lg border-white/20 shadow-xl shadow-white/5 overflow-visible">
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-px h-3 bg-white/50"></div>
+                  <Card className="absolute top-24 left-1/2 -translate-x-1/2 w-80 bg-black/95 backdrop-blur-xl border-white/15 shadow-2xl shadow-black/50 overflow-visible animate-fade-in">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-px h-4 bg-gradient-to-b from-transparent to-white/30" />
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-center">
                         <Badge className={`px-2 text-xs ${getStatusStyles(item.status)}`}>
                           {item.status === "completed" ? "COMPLETE" : item.status === "in-progress" ? "EN COURS" : "NON FAIT"}
                         </Badge>
-                        <span className="text-xs font-mono text-white/50">{item.date}</span>
+                        <span className="text-xs font-mono text-white/40">{item.date}</span>
                       </div>
                       <CardTitle className="text-sm mt-2 text-white">{item.title}</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-xs text-white/80">
-                      <p>{item.content}</p>
+                    <CardContent className="text-xs text-white/70">
+                      <p className="leading-relaxed">{item.content}</p>
 
                       <div className="mt-3 pt-2 border-t border-white/10">
-                        <div className="flex justify-between items-center text-xs mb-1">
-                          <span className="flex items-center"><Zap size={10} className="mr-1" />Progression</span>
-                          <span className="font-mono">{item.energy}%</span>
+                        <div className="flex justify-between items-center text-xs mb-1.5">
+                          <span className="flex items-center text-white/50"><Zap size={10} className="mr-1" />Progression</span>
+                          <span className="font-mono text-white/70">{item.energy}%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full" style={{ width: `${item.energy}%` }}></div>
+                        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-1000"
+                            style={{
+                              width: `${item.energy}%`,
+                              background: item.status === "completed"
+                                ? "linear-gradient(to right, #10b981, #14b8a6)"
+                                : item.status === "in-progress"
+                                ? "linear-gradient(to right, #f59e0b, #f97316)"
+                                : "linear-gradient(to right, #71717a, #a1a1aa)",
+                            }} />
                         </div>
                       </div>
 
-                      {/* View details button */}
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full mt-3 h-8 text-xs border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                        className="w-full mt-4 h-9 text-xs border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNodeClick?.(item.id);
                         }}
                       >
-                        Voir les details
-                        <ArrowRight size={12} className="ml-1" />
+                        Explorer cette etape
+                        <ArrowRight size={14} className="ml-1.5" />
                       </Button>
 
                       {item.relatedIds.length > 0 && (
                         <div className="mt-3 pt-2 border-t border-white/10">
                           <div className="flex items-center mb-2">
-                            <Link size={10} className="text-white/70 mr-1" />
-                            <h4 className="text-xs uppercase tracking-wider font-medium text-white/70">Etapes liees</h4>
+                            <Link size={10} className="text-white/40 mr-1" />
+                            <h4 className="text-[10px] uppercase tracking-widest font-medium text-white/40">Etapes liees</h4>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {item.relatedIds.map((relatedId) => {
@@ -273,14 +414,14 @@ export default function RadialOrbitalTimeline({
                                   key={relatedId}
                                   variant="outline"
                                   size="sm"
-                                  className="flex items-center h-6 px-2 py-0 text-xs rounded-sm border-white/20 bg-transparent hover:bg-white/10 text-white/80 hover:text-white transition-all"
+                                  className="flex items-center h-6 px-2 py-0 text-xs rounded-sm border-white/15 bg-transparent hover:bg-white/10 text-white/60 hover:text-white transition-all"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     toggleItem(relatedId);
                                   }}
                                 >
                                   {relatedItem?.title}
-                                  <ArrowRight size={8} className="ml-1 text-white/60" />
+                                  <ArrowRight size={8} className="ml-1 text-white/40" />
                                 </Button>
                               );
                             })}
