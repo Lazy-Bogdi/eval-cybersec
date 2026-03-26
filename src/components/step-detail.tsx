@@ -1,8 +1,7 @@
 "use client";
-import { X, Terminal, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Terminal, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 import type { EvalStep } from "@/lib/eval-data";
 import { useState } from "react";
 
@@ -13,8 +12,8 @@ interface StepDetailProps {
 
 function ImageModal({ src, caption, onClose }: { src: string; caption: string; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white">
+    <div className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white z-10">
         <X size={24} />
       </button>
       <div className="max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
@@ -27,8 +26,8 @@ function ImageModal({ src, caption, onClose }: { src: string; caption: string; o
 }
 
 export default function StepDetail({ step, onClose }: StepDetailProps) {
-  const [selectedImage, setSelectedImage] = useState<{ src: string; caption: string } | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState<{ src: string; caption: string } | null>(null);
+  const [sectionIndex, setSectionIndex] = useState(0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -39,9 +38,11 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
     }
   };
 
+  const totalSections = step.sections.length;
+
   return (
     <>
-      {selectedImage && <ImageModal src={selectedImage.src} caption={selectedImage.caption} onClose={() => setSelectedImage(null)} />}
+      {fullscreenImage && <ImageModal src={fullscreenImage.src} caption={fullscreenImage.caption} onClose={() => setFullscreenImage(null)} />}
 
       <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-auto" onClick={onClose}>
         <div
@@ -70,127 +71,117 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
             </div>
           </div>
 
-          <div className="p-6 space-y-8">
-            {/* Description */}
-            <p className="text-white/70 text-base leading-relaxed">{step.content}</p>
+          <div className="p-6 space-y-6">
+            {/* Intro */}
+            <p className="text-white/60 text-base leading-relaxed border-l-2 border-red-500/30 pl-4">{step.content}</p>
 
-            {/* Details */}
-            <div>
-              <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Search size={14} /> Deroulement
-              </h3>
-              <ul className="space-y-2">
-                {step.details.map((detail, i) => (
-                  <li key={i} className="text-white/80 text-sm flex gap-2">
-                    <span className="text-red-400 mt-0.5">&#9656;</span>
-                    <span>{detail}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Commands */}
-            {step.commands.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Terminal size={14} /> Commandes
-                </h3>
-                <div className="bg-zinc-900 rounded-lg border border-white/5 p-4 space-y-1 font-mono text-sm">
-                  {step.commands.map((cmd, i) => (
-                    <div key={i} className={cmd.startsWith("#") ? "text-white/30" : "text-emerald-400"}>
-                      {!cmd.startsWith("#") && <span className="text-red-400 mr-2">$</span>}
-                      {cmd}
-                    </div>
+            {/* Section navigation */}
+            {totalSections > 1 && (
+              <div className="flex items-center justify-between bg-zinc-900/50 rounded-lg px-4 py-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/50 hover:text-white"
+                  onClick={() => setSectionIndex(Math.max(0, sectionIndex - 1))}
+                  disabled={sectionIndex === 0}
+                >
+                  <ChevronLeft size={16} className="mr-1" /> Precedent
+                </Button>
+                <div className="flex gap-1.5">
+                  {step.sections.map((_, i) => (
+                    <button
+                      key={i}
+                      className={`w-2.5 h-2.5 rounded-full transition-all ${
+                        i === sectionIndex ? "bg-red-500 scale-125" :
+                        i < sectionIndex ? "bg-emerald-500/50" : "bg-white/15 hover:bg-white/30"
+                      }`}
+                      onClick={() => setSectionIndex(i)}
+                    />
                   ))}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/50 hover:text-white"
+                  onClick={() => setSectionIndex(Math.min(totalSections - 1, sectionIndex + 1))}
+                  disabled={sectionIndex === totalSections - 1}
+                >
+                  Suivant <ChevronRight size={16} className="ml-1" />
+                </Button>
               </div>
             )}
 
-            {/* Findings */}
-            {step.findings.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">Resultats</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {step.findings.map((finding, i) => (
-                    <div key={i} className="bg-zinc-900 border border-white/5 rounded-lg px-4 py-2 text-sm text-white/80 font-mono">
-                      {finding}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Current section */}
+            {step.sections.map((section, i) => (
+              <div
+                key={i}
+                className={`space-y-4 transition-all duration-300 ${
+                  i === sectionIndex ? "opacity-100" : "hidden"
+                }`}
+              >
+                {/* Section title */}
+                {section.title && (
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span className="text-red-500 font-mono text-sm">{String(i + 1).padStart(2, "0")}</span>
+                    {section.title}
+                  </h3>
+                )}
 
-            {/* Screenshots */}
-            {step.screenshots.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">
-                  Screenshots ({step.screenshots.length})
-                </h3>
-                <div className="relative">
-                  {/* Main image */}
+                {/* Section text */}
+                <p className="text-white/70 text-sm leading-relaxed">{section.text}</p>
+
+                {/* Commands */}
+                {section.commands && section.commands.length > 0 && (
+                  <div className="bg-zinc-900 rounded-lg border border-white/5 p-4 space-y-1 font-mono text-sm">
+                    {section.commands.map((cmd, j) => (
+                      <div key={j} className={cmd.startsWith("#") ? "text-white/30" : "text-emerald-400"}>
+                        {!cmd.startsWith("#") && <span className="text-red-400 mr-2">$</span>}
+                        {cmd}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Screenshot */}
+                {section.screenshot && (
                   <div
-                    className="bg-zinc-900 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition-colors"
-                    onClick={() => setSelectedImage(step.screenshots[currentImageIndex])}
+                    className="bg-zinc-900 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/25 transition-all group"
+                    onClick={() => setFullscreenImage(section.screenshot!)}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={step.screenshots[currentImageIndex].src}
-                      alt={step.screenshots[currentImageIndex].caption}
-                      className="w-full h-auto object-contain"
+                      src={section.screenshot.src}
+                      alt={section.screenshot.caption}
+                      className="w-full h-auto object-contain group-hover:scale-[1.01] transition-transform duration-300"
                     />
-                    <div className="p-3 border-t border-white/5">
-                      <p className="text-white/60 text-xs text-center">{step.screenshots[currentImageIndex].caption}</p>
+                    <div className="p-3 border-t border-white/5 flex items-center justify-between">
+                      <p className="text-white/50 text-xs">{section.screenshot.caption}</p>
+                      <span className="text-white/30 text-xs">Cliquer pour agrandir</span>
                     </div>
                   </div>
+                )}
 
-                  {/* Navigation */}
-                  {step.screenshots.length > 1 && (
-                    <div className="flex items-center justify-center gap-3 mt-3">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white/50 hover:text-white h-8 w-8"
-                        onClick={() => setCurrentImageIndex((prev) => prev === 0 ? step.screenshots.length - 1 : prev - 1)}
-                      >
-                        <ChevronLeft size={16} />
-                      </Button>
-                      <div className="flex gap-1.5">
-                        {step.screenshots.map((_, i) => (
-                          <button
-                            key={i}
-                            className={`w-2 h-2 rounded-full transition-colors ${i === currentImageIndex ? "bg-red-500" : "bg-white/20 hover:bg-white/40"}`}
-                            onClick={() => setCurrentImageIndex(i)}
-                          />
-                        ))}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white/50 hover:text-white h-8 w-8"
-                        onClick={() => setCurrentImageIndex((prev) => prev === step.screenshots.length - 1 ? 0 : prev + 1)}
-                      >
-                        <ChevronRight size={16} />
-                      </Button>
-                    </div>
-                  )}
+                {/* Note/Explanation */}
+                {section.note && (
+                  <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg p-4 flex gap-3">
+                    <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-white/70 text-sm leading-relaxed">{section.note}</p>
+                  </div>
+                )}
+              </div>
+            ))}
 
-                  {/* Thumbnails */}
-                  {step.screenshots.length > 1 && (
-                    <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-                      {step.screenshots.map((ss, i) => (
-                        <button
-                          key={i}
-                          className={`flex-shrink-0 w-20 h-14 rounded border overflow-hidden transition-all ${
-                            i === currentImageIndex ? "border-red-500 opacity-100" : "border-white/10 opacity-50 hover:opacity-80"
-                          }`}
-                          onClick={() => setCurrentImageIndex(i)}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ss.src} alt={ss.caption} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
+            {/* Findings */}
+            {step.findings.length > 0 && (
+              <div className="border-t border-white/5 pt-6">
+                <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider mb-3">Resultats cles</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {step.findings.map((finding, i) => (
+                    <div key={i} className="bg-zinc-900 border border-white/5 rounded-lg px-4 py-2.5 text-sm text-white/80 font-mono flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></span>
+                      {finding}
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             )}
