@@ -81,9 +81,14 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
 
       <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-sm" onClick={onClose}>
         <div
-          className="absolute inset-2 md:inset-4 lg:inset-6 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="absolute inset-0 sm:inset-2 md:inset-4 lg:inset-6 bg-zinc-950 border-0 sm:border border-white/10 rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Mobile drag handle */}
+          <div className="sm:hidden flex justify-center pt-2">
+            <div className="w-10 h-1 rounded-full bg-white/20" />
+          </div>
+
           {/* Header */}
           <div className="flex-shrink-0 border-b border-white/10 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -109,7 +114,7 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
           {/* Split content */}
           <div className="flex-1 flex overflow-hidden">
             {/* LEFT — scrollable narrative */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-0">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-0">
               {/* Intro */}
               <div className="mb-8 pb-6 border-b border-white/5">
                 <p className="text-white/50 text-base leading-relaxed border-l-2 border-red-500/30 pl-4">{step.content}</p>
@@ -139,11 +144,11 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
                   )}
 
                   {/* Text */}
-                  <p className="text-white/65 text-sm leading-relaxed mb-4 ml-10">{section.text}</p>
+                  <p className="text-white/65 text-sm leading-relaxed mb-4 sm:ml-10">{section.text}</p>
 
                   {/* Commands */}
                   {section.commands && section.commands.length > 0 && (
-                    <div className="ml-10 mb-4 bg-zinc-900 rounded-lg border border-white/5 p-4 space-y-1 font-mono text-sm overflow-x-auto">
+                    <div className="sm:ml-10 mb-4 bg-zinc-900 rounded-lg border border-white/5 p-4 space-y-1 font-mono text-sm overflow-x-auto">
                       {section.commands.map((cmd, j) => (
                         <div key={j} className={cmd.startsWith("#") ? "text-white/25 italic" : "text-emerald-400"}>
                           {!cmd.startsWith("#") && <span className="text-red-400 mr-2">$</span>}
@@ -155,7 +160,7 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
 
                   {/* Screenshot inline on mobile */}
                   {section.screenshot && (
-                    <div className="ml-10 mb-4 lg:hidden">
+                    <div className="sm:ml-10 mb-4 lg:hidden">
                       <div
                         className="bg-zinc-900 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/25 transition-all"
                         onClick={() => setFullscreenImage(section.screenshot!)}
@@ -169,7 +174,7 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
 
                   {/* Note inline on mobile */}
                   {section.note && (
-                    <div className="ml-10 lg:hidden bg-blue-500/5 border border-blue-500/15 rounded-lg p-3 flex gap-3">
+                    <div className="sm:ml-10 lg:hidden bg-blue-500/5 border border-blue-500/15 rounded-lg p-3 flex gap-3">
                       <Info size={14} className="text-blue-400 mt-0.5 flex-shrink-0" />
                       <p className="text-white/60 text-xs leading-relaxed">{section.note}</p>
                     </div>

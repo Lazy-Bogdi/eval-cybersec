@@ -59,3 +59,12 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }
+
+/* Hide scrollbar for mobile carousel */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

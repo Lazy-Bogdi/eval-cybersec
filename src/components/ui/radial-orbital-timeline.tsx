@@ -62,8 +62,26 @@ export default function RadialOrbitalTimeline({
   const containerRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
   const stars = useMemo(() => generateStars(120), []);
+
+  // Track active card in mobile carousel
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const children = el.children;
+      if (!children.length) return;
+      const gap = 12;
+      const cardWidth = (el.scrollWidth - (children.length - 1) * gap) / children.length;
+      const index = Math.round(el.scrollLeft / (cardWidth + gap));
+      setActiveCardIndex(Math.max(0, Math.min(index, timelineData.length - 1)));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [timelineData.length]);
 
   // Animate time for twinkling
   useEffect(() => {
@@ -177,11 +195,64 @@ export default function RadialOrbitalTimeline({
   };
 
   return (
-    <div
-      className="w-full h-[650px] flex flex-col items-center justify-center overflow-hidden relative"
-      ref={containerRef}
-      onClick={handleContainerClick}
-    >
+    <div className="w-full" ref={containerRef} onClick={handleContainerClick}>
+      {/* ---- Mobile carousel ---- */}
+      <div className="md:hidden relative py-6">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full opacity-[0.07]"
+            style={{ background: "radial-gradient(circle, rgba(239,68,68,0.4) 0%, transparent 70%)" }} />
+        </div>
+        <div
+          ref={carouselRef}
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-6 pb-4 scrollbar-hide relative"
+        >
+          {timelineData.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.id}
+                className="snap-center flex-shrink-0 w-[72vw] max-w-[300px] bg-zinc-950/80 backdrop-blur border border-white/10 rounded-2xl p-5 cursor-pointer active:scale-[0.97] transition-transform duration-150"
+                onClick={(e) => { e.stopPropagation(); onNodeClick?.(item.id); }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br ${getNodeGradient(item.status)} shadow-lg`}>
+                    <Icon size={18} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-white truncate">{item.title}</div>
+                    <div className="text-[11px] text-white/40">{item.date}</div>
+                  </div>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 border-black ${
+                    item.status === "completed" ? "bg-emerald-400 text-black" :
+                    item.status === "in-progress" ? "bg-amber-400 text-black" :
+                    "bg-zinc-600 text-white"
+                  }`}>{index + 1}</div>
+                </div>
+                <p className="text-xs text-white/50 leading-relaxed line-clamp-2 mb-4">{item.content}</p>
+                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-3">
+                  <div className="h-full rounded-full transition-all duration-500" style={{
+                    width: `${item.energy}%`,
+                    background: item.status === "completed" ? "linear-gradient(to right, #10b981, #14b8a6)" : item.status === "in-progress" ? "linear-gradient(to right, #f59e0b, #f97316)" : "linear-gradient(to right, #71717a, #a1a1aa)",
+                  }} />
+                </div>
+                <div className="flex items-center justify-center gap-1.5 text-xs text-red-400 font-semibold">
+                  Explorer <ArrowRight size={12} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Indicator dots */}
+        <div className="flex justify-center gap-2 mt-4">
+          {timelineData.map((_, i) => (
+            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === activeCardIndex ? "w-6 bg-red-500" : "w-1.5 bg-white/20"}`} />
+          ))}
+        </div>
+      </div>
+
+      {/* ---- Desktop orbital (unchanged) ---- */}
+      <div className="hidden md:flex flex-col items-center justify-center h-[650px] overflow-hidden relative">
       {/* Starfield background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {stars.map((star, i) => {
@@ -435,6 +506,7 @@ export default function RadialOrbitalTimeline({
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

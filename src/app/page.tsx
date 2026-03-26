@@ -29,7 +29,8 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-white/50 text-lg">Pentest de la machine de Raptor Dissident</p>
-          <p className="text-white/30 text-sm mt-2">Cliquez sur les noeuds pour explorer chaque etape</p>
+          <p className="text-white/30 text-sm mt-2 hidden md:block">Cliquez sur les noeuds pour explorer chaque etape</p>
+          <p className="text-white/30 text-sm mt-2 md:hidden">Swipez pour decouvrir les etapes</p>
         </div>
 
         {/* Orbital Timeline */}
@@ -58,8 +59,8 @@ export default function Home() {
         </div>
 
         {/* Score card */}
-        <div className="bg-zinc-950 border border-white/10 rounded-2xl p-8 mb-10 text-center">
-          <div className="text-6xl font-bold mb-2">
+        <div className="bg-zinc-950 border border-white/10 rounded-2xl p-6 sm:p-8 mb-10 text-center">
+          <div className="text-5xl sm:text-6xl font-bold mb-2">
             <span className="text-red-500">{obtainedPoints}</span>
             <span className="text-white/30">/{totalPoints}</span>
           </div>
@@ -77,31 +78,31 @@ export default function Home() {
           {evalSteps.map((step) => (
             <div
               key={step.id}
-              className="bg-zinc-950 border border-white/5 rounded-xl p-5 flex items-center justify-between hover:border-white/15 transition-colors cursor-pointer group"
+              className="bg-zinc-950 border border-white/5 rounded-xl p-4 sm:p-5 flex items-center justify-between hover:border-white/15 transition-colors cursor-pointer group"
               onClick={() => setSelectedStepId(step.id)}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                   step.status === "completed" ? "bg-emerald-500/10 text-emerald-400" :
                   step.status === "in-progress" ? "bg-amber-500/10 text-amber-400" :
                   "bg-zinc-800 text-zinc-500"
                 }`}>
                   <step.icon size={18} />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white group-hover:text-red-400 transition-colors">{step.title}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-white group-hover:text-red-400 transition-colors truncate">{step.title}</h3>
                   <p className="text-xs text-white/40">{step.date}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className={`text-xs px-2 py-1 rounded-full border ${
+              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-2">
+                <div className={`hidden sm:block text-xs px-2 py-1 rounded-full border ${
                   step.status === "completed" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
                   step.status === "in-progress" ? "text-amber-400 border-amber-500/30 bg-amber-500/10" :
                   "text-zinc-500 border-zinc-500/30 bg-zinc-500/10"
                 }`}>
                   {step.status === "completed" ? "Complete" : step.status === "in-progress" ? "En cours" : "Non fait"}
                 </div>
-                <span className="text-xl font-bold font-mono text-white/80">
+                <span className="text-lg sm:text-xl font-bold font-mono text-white/80">
                   {step.pointsObtained}<span className="text-white/30">{step.points}</span>
                 </span>
               </div>
