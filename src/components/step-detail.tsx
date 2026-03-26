@@ -2,9 +2,9 @@
 import { X, Terminal, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { assetUrl } from "@/lib/utils";
 import type { EvalStep } from "@/lib/eval-data";
 import { useState } from "react";
-import Image from "next/image";
 
 interface StepDetailProps {
   step: EvalStep;
@@ -18,7 +18,8 @@ function ImageModal({ src, caption, onClose }: { src: string; caption: string; o
         <X size={24} />
       </button>
       <div className="max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-        <Image src={src} alt={caption} width={1200} height={800} className="max-h-[80vh] w-auto object-contain rounded-lg" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={assetUrl(src)} alt={caption} className="max-h-[80vh] w-auto object-contain rounded-lg" />
         <p className="text-white/70 text-sm mt-3 text-center">{caption}</p>
       </div>
     </div>
@@ -81,7 +82,7 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
               <ul className="space-y-2">
                 {step.details.map((detail, i) => (
                   <li key={i} className="text-white/80 text-sm flex gap-2">
-                    <span className="text-red-400 mt-0.5">▸</span>
+                    <span className="text-red-400 mt-0.5">&#9656;</span>
                     <span>{detail}</span>
                   </li>
                 ))}
@@ -131,11 +132,10 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
                     className="bg-zinc-900 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition-colors"
                     onClick={() => setSelectedImage(step.screenshots[currentImageIndex])}
                   >
-                    <Image
-                      src={step.screenshots[currentImageIndex].src}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={assetUrl(step.screenshots[currentImageIndex].src)}
                       alt={step.screenshots[currentImageIndex].caption}
-                      width={900}
-                      height={500}
                       className="w-full h-auto object-contain"
                     />
                     <div className="p-3 border-t border-white/5">
@@ -185,7 +185,8 @@ export default function StepDetail({ step, onClose }: StepDetailProps) {
                           }`}
                           onClick={() => setCurrentImageIndex(i)}
                         >
-                          <Image src={ss.src} alt={ss.caption} width={80} height={56} className="w-full h-full object-cover" />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={assetUrl(ss.src)} alt={ss.caption} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
