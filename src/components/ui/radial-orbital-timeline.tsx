@@ -192,13 +192,21 @@ export default function RadialOrbitalTimeline({
 
                 {/* Node circle */}
                 <div className={`
-                  w-12 h-12 rounded-full flex items-center justify-center
+                  w-12 h-12 rounded-full flex items-center justify-center relative
                   bg-gradient-to-br ${getNodeColor(item.status)}
                   border-2
                   ${isExpanded ? "border-white shadow-lg shadow-white/30 scale-125" : isRelated ? "border-white animate-pulse" : "border-white/40"}
                   transition-all duration-300
                 `}>
                   <Icon size={18} className="text-white" />
+                  {/* Step number badge */}
+                  <div className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    item.status === "completed" ? "bg-emerald-500 text-white" :
+                    item.status === "in-progress" ? "bg-amber-500 text-black" :
+                    "bg-zinc-600 text-white/70"
+                  }`}>
+                    {index + 1}
+                  </div>
                 </div>
 
                 {/* Label */}
